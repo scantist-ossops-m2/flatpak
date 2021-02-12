@@ -26,7 +26,9 @@
 
 #include "libglnx.h"
 
+#ifndef FLATPAK_DISABLE_GPG
 #include <gpgme.h>
+#endif
 #include "flatpak-oci-registry-private.h"
 #include "flatpak-utils-base-private.h"
 #include "flatpak-utils-private.h"
@@ -2111,6 +2113,7 @@ flatpak_oci_registry_find_delta_manifest (FlatpakOciRegistry    *registry,
   return NULL;
 }
 
+#ifndef FLATPAK_DISABLE_GPG
 G_DEFINE_AUTO_CLEANUP_FREE_FUNC (gpgme_data_t, gpgme_data_release, NULL)
 G_DEFINE_AUTO_CLEANUP_FREE_FUNC (gpgme_ctx_t, gpgme_release, NULL)
 G_DEFINE_AUTO_CLEANUP_FREE_FUNC (gpgme_key_t, gpgme_key_unref, NULL)
@@ -2431,6 +2434,7 @@ flatpak_gpgme_new_ctx (const char *homedir,
 
   return g_steal_pointer (&context);
 }
+#endif
 
 GBytes *
 flatpak_oci_sign_data (GBytes       *data,
@@ -2438,6 +2442,7 @@ flatpak_oci_sign_data (GBytes       *data,
                        const char   *homedir,
                        GError      **error)
 {
+#ifndef FLATPAK_DISABLE_GPG
   g_auto(GLnxTmpfile) tmpf = { 0 };
   g_autoptr(GOutputStream) tmp_signature_output = NULL;
   g_auto(gpgme_ctx_t) context = NULL;
@@ -2515,8 +2520,13 @@ flatpak_oci_sign_data (GBytes       *data,
     return NULL;
 
   return g_mapped_file_get_bytes (signature_file);
+#else
+  flatpak_fail (error, "GPG signature unsupported");
+  return NULL;
+#endif
 }
 
+#ifndef FLATPAK_DISABLE_GPG
 static gboolean
 signature_is_valid (gpgme_signature_t signature)
 {
@@ -2607,6 +2617,7 @@ flatpak_gpgme_ctx_tmp_home_dir (gpgme_ctx_t   gpgme_ctx,
 
   return TRUE;
 }
+#endif
 
 FlatpakOciSignature *
 flatpak_oci_verify_signature (OstreeRepo *repo,
@@ -2614,6 +2625,7 @@ flatpak_oci_verify_signature (OstreeRepo *repo,
                               GBytes     *signed_data,
                               GError    **error)
 {
+#ifndef FLATPAK_DISABLE_GPG
   gpgme_ctx_t context;
   gpgme_error_t gpg_error;
   g_auto(gpgme_data_t) signed_data_buffer = NULL;
@@ -2689,6 +2701,10 @@ flatpak_oci_verify_signature (OstreeRepo *repo,
     return FALSE;
 
   return (FlatpakOciSignature *) g_steal_pointer (&json);
+#else
+  flatpak_fail (error, "GPG signature unsupported");
+  return NULL;
+#endif
 }
 
 static const char *
