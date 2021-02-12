@@ -2360,8 +2360,10 @@ flatpak_parse_repofile (const char   *remote_name,
   if (nodeps)
     g_key_file_set_boolean (config, group, "xa.nodeps", TRUE);
 
+#ifndef FLATPAK_DISABLE_GPG
   gpg_key = g_key_file_get_string (keyfile, source_group,
                                    FLATPAK_REPO_GPGKEY_KEY, NULL);
+#endif
   if (gpg_key != NULL)
     {
       guchar *decoded;
@@ -2403,11 +2405,13 @@ flatpak_parse_repofile (const char   *remote_name,
                                                           FLATPAK_REPO_COLLECTION_ID_KEY);
   if (collection_id != NULL)
     {
+#ifndef FLATPAK_DISABLE_GPG
       if (gpg_key == NULL)
         {
           flatpak_fail_error (error, FLATPAK_ERROR_INVALID_DATA, _("Collection ID requires GPG key to be provided"));
           return NULL;
         }
+#endif
 
       g_key_file_set_string (config, group, "collection-id", collection_id);
     }
