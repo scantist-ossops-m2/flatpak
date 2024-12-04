@@ -2,10 +2,10 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
     "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 
-<refentry id="flatpak-override">
+<refentry id="flatpak-build">
 
     <refentryinfo>
-        <title>flatpak override</title>
+        <title>flatpak build</title>
         <productname>flatpak</productname>
 
         <authorgroup>
@@ -19,20 +19,21 @@
     </refentryinfo>
 
     <refmeta>
-        <refentrytitle>flatpak override</refentrytitle>
+        <refentrytitle>flatpak build</refentrytitle>
         <manvolnum>1</manvolnum>
     </refmeta>
 
     <refnamediv>
-        <refname>flatpak-override</refname>
-        <refpurpose>Override application requirements</refpurpose>
+        <refname>flatpak-build</refname>
+        <refpurpose>Build in a directory</refpurpose>
     </refnamediv>
 
     <refsynopsisdiv>
             <cmdsynopsis>
-                <command>flatpak override</command>
+                <command>flatpak build</command>
                 <arg choice="opt" rep="repeat">OPTION</arg>
-                <arg choice="opt">APP</arg>
+                <arg choice="plain">DIRECTORY</arg>
+                <arg choice="opt">COMMAND <arg choice="opt" rep="repeat">ARG</arg></arg>
             </cmdsynopsis>
     </refsynopsisdiv>
 
@@ -40,24 +41,17 @@
         <title>Description</title>
 
         <para>
-            Overrides the application specified runtime requirements. This can be used
-            to grant a sandboxed application more or less resources than it requested.
+            Runs a build command in a directory. <arg choice="plain">DIRECTORY</arg>
+            must have been initialized with <command>flatpak build-init</command>.
         </para>
         <para>
-            By default the application gets access to the resources it
-            requested when it is started. But the user can override it
-            on a particular instance by specifying extra arguments to
-            flatpak run, or every time by using flatpak override.
+            The sdk that is specified in the <filename>metadata</filename> file
+            in the directory is mounted at <filename>/usr</filename> and the
+            <filename>files</filename> and <filename>var</filename> subdirectories
+            are mounted at <filename>/app</filename> and <filename>/var</filename>,
+            respectively. They are writable, and their contents are preserved between
+            build commands, to allow accumulating build artifacts there.
         </para>
-        <para>
-            If the application id is not specified then the overrides affect all applications,
-            but the per-application overrides can override the global overrides.
-        </para>
-        <para>
-            Unless overridden with the --user or --installation options, this command
-            changes the default system-wide installation.
-        </para>
-
     </refsect1>
 
     <refsect1>
@@ -76,33 +70,49 @@
             </varlistentry>
 
             <varlistentry>
-                <term><option>--user</option></term>
+                <term><option>-v</option></term>
+                <term><option>--verbose</option></term>
 
                 <listitem><para>
-                    Update a per-user installation.
+                    Print debug information during command processing.
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--system</option></term>
+                <term><option>-r</option></term>
+                <term><option>--runtime</option></term>
 
                 <listitem><para>
-                    Update the default system-wide installation.
+                    Use the non-devel runtime that is specified in the application metadata instead of the devel runtime.
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--installation=NAME</option></term>
+                <term><option>-p</option></term>
+                <term><option>--die-with-parent</option></term>
 
                 <listitem><para>
-                    Updates a system-wide installation specified by <arg choice="plain">NAME</arg>
-                    among those defined in <filename>/etc/flatpak/installations.d/</filename>.
-                    Using <arg choice="plain">--installation=default</arg> is equivalent to using
-                    <arg choice="plain">--system</arg>.
+                    Kill the build process and all children when the launching process dies.
                 </para></listitem>
             </varlistentry>
 
-            <varlistentry>
+           <varlistentry>
+                <term><option>--bind-mount=DEST=SOURCE</option></term>
+
+                <listitem><para>
+                    Add a custom bind mount in the build namespace. Can be specified multiple times.
+                </para></listitem>
+            </varlistentry>
+
+           <varlistentry>
+                <term><option>--build-dir=PATH</option></term>
+
+                <listitem><para>
+                    Start the build in this directory (default is in the current directory).
+                </para></listitem>
+            </varlistentry>
+
+           <varlistentry>
                 <term><option>--share=SUBSYSTEM</option></term>
 
                 <listitem><para>
@@ -201,16 +211,15 @@
             </varlistentry>
 
             <varlistentry>
-                <term><option>--filesystem=FS</option></term>
+                <term><option>--filesystem=FILESYSTEM[:ro|:create]</option></term>
 
                 <listitem><para>
                     Allow the application access to a subset of the filesystem.
                     This overrides to the Context section from the application metadata.
-                    FS can be one of: home, host, xdg-desktop, xdg-documents, xdg-download
+                    FILESYSTEM can be one of: home, host, xdg-desktop, xdg-documents, xdg-download
                     xdg-music, xdg-pictures, xdg-public-share, xdg-templates, xdg-videos, xdg-run,
-                    xdg-config, xdg-cache, xdg-data,
-                    an absolute path, or a homedir-relative path like ~/dir or paths
-                    relative to the xdg dirs, like xdg-download/subdir.
+                    xdg-config, xdg-cache, xdg-data, an absolute path, or a homedir-relative
+                    path like ~/dir or paths relative to the xdg dirs, like xdg-download/subdir.
                     The optional :ro suffix indicates that the location will be read-only.
                     The optional :create suffix indicates that the location will be read-write and created if it doesn't exist.
                     This option can be used multiple times.
@@ -228,13 +237,15 @@
                     xdg-music, xdg-pictures, xdg-public-share, xdg-templates, xdg-videos,
                     an absolute path, or a homedir-relative path like ~/dir.
                     This option can be used multiple times.
-                </para><para>
-                    In general, "--nofilesystem=PATH" will remove access to a specific path if exactly that path
-                    was previously granted. However, as a special case, "--nofilesystem=home" will remove access to all
-                    previously granted locations inside the homedir as well, such as "home/some-dir", or "xdg-download",
-                    and "--nofilesystem=host" will remove access to all previously granted locations.
-                    Note: absolute paths that happen to be inside the current users home directory are not considered for
-                    this special case.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--with-appdir</option></term>
+
+                <listitem><para>
+                  Expose and configure access to the per-app storage directory in $HOME/.var/app. This is
+                  not normally useful when building, but helps when testing built apps.
                 </para></listitem>
             </varlistentry>
 
@@ -295,8 +306,7 @@ key=v1;v2;
                 <term><option>--system-own-name=NAME</option></term>
 
                 <listitem><para>
-                    Allow the application to own the well known name NAME on the system bus.
-                    If NAME ends with .*, it allows the application to own all matching names.
+                    Allow the application to own the well-known name NAME on the system bus.
                     This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
@@ -306,8 +316,7 @@ key=v1;v2;
                 <term><option>--system-talk-name=NAME</option></term>
 
                 <listitem><para>
-                    Allow the application to talk to the well known name NAME on the system bus.
-                    If NAME ends with .*, it allows the application to talk to all matching names.
+                    Allow the application to talk to the well-known name NAME on the system bus.
                     This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
@@ -326,32 +335,63 @@ key=v1;v2;
             </varlistentry>
 
             <varlistentry>
-                <term><option>-v</option></term>
-                <term><option>--verbose</option></term>
+                <term><option>--sdk-dir=DIR</option></term>
 
                 <listitem><para>
-                    Print debug information during command processing.
+                  Normally if there is a <filename>usr</filename> directory in the build dir, this is used
+                  for the runtime files (this can be created by --writable-sdk or --type=runtime arguments
+                  to build-init). If you specify --sdk-dir this directoryname will be used instead.
+                  Use this if you passed --sdk-dir to build-init.
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--version</option></term>
+                <term><option>--readonly</option></term>
 
                 <listitem><para>
-                    Print version information and exit.
+                  Mount the normally writable destination directories read-only. This can
+                  be useful if you want to run something in the sandbox but guarantee that
+                  it doesn't affect the build results. For example tests.
                 </para></listitem>
             </varlistentry>
-        </variablelist>
+
+            <varlistentry>
+                <term><option>--metadata=FILE</option></term>
+
+                <listitem><para>
+                  Use the specified filename as metadata in the exported app instead of
+                  the default file (called <filename>metadata</filename>). This is useful
+                  if you build multiple things from a single build tree (such as both a
+                  platform and a sdk).
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--log-session-bus</option></term>
+
+                <listitem><para>
+                    Log session bus traffic. This can be useful to see what access you need to allow in
+                    your D-Bus policy.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--log-system-bus</option></term>
+
+                <listitem><para>
+                    Log system bus traffic. This can be useful to see what access you need to allow in
+                    your D-Bus policy.
+                </para></listitem>
+            </varlistentry>
+
+          </variablelist>
     </refsect1>
 
     <refsect1>
         <title>Examples</title>
 
         <para>
-            <command>$ flatpak override --nosocket=wayland org.gnome.GEdit</command>
-        </para>
-        <para>
-            <command>$ flatpak override --filesystem=home org.mozilla.Firefox</command>
+            <command>$ flatpak build /build/my-app rpmbuild my-app.src.rpm</command>
         </para>
 
     </refsect1>
@@ -361,7 +401,9 @@ key=v1;v2;
 
         <para>
             <citerefentry><refentrytitle>flatpak</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-            <citerefentry><refentrytitle>flatpak-run</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+            <citerefentry><refentrytitle>flatpak-build-init</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+            <citerefentry><refentrytitle>flatpak-build-finish</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+            <citerefentry><refentrytitle>flatpak-build-export</refentrytitle><manvolnum>1</manvolnum></citerefentry>
         </para>
 
     </refsect1>
