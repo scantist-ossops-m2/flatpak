@@ -2,10 +2,10 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
     "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 
-<refentry id="flatpak-override">
+<refentry id="flatpak-run">
 
     <refentryinfo>
-        <title>flatpak override</title>
+        <title>flatpak run</title>
         <productname>flatpak</productname>
 
         <authorgroup>
@@ -19,20 +19,21 @@
     </refentryinfo>
 
     <refmeta>
-        <refentrytitle>flatpak override</refentrytitle>
+        <refentrytitle>flatpak run</refentrytitle>
         <manvolnum>1</manvolnum>
     </refmeta>
 
     <refnamediv>
-        <refname>flatpak-override</refname>
-        <refpurpose>Override application requirements</refpurpose>
+        <refname>flatpak-run</refname>
+        <refpurpose>Run an application or open a shell in a runtime</refpurpose>
     </refnamediv>
 
     <refsynopsisdiv>
             <cmdsynopsis>
-                <command>flatpak override</command>
+                <command>flatpak run</command>
                 <arg choice="opt" rep="repeat">OPTION</arg>
-                <arg choice="opt">APP</arg>
+                <arg choice="plain">REF</arg>
+                <arg choice="opt" rep="repeat">ARG</arg>
             </cmdsynopsis>
     </refsynopsisdiv>
 
@@ -40,22 +41,29 @@
         <title>Description</title>
 
         <para>
-            Overrides the application specified runtime requirements. This can be used
-            to grant a sandboxed application more or less resources than it requested.
+            If <arg choice="plain">REF</arg> names an installed application,
+            flatpak runs the application in a sandboxed environment. Extra
+            arguments are passed on to the application.
         </para>
         <para>
-            By default the application gets access to the resources it
-            requested when it is started. But the user can override it
-            on a particular instance by specifying extra arguments to
-            flatpak run, or every time by using flatpak override.
+            If <arg choice="plain">REF</arg> names a runtime, a shell is opened in the
+            runtime. This is useful for development and testing.
         </para>
         <para>
-            If the application id is not specified then the overrides affect all applications,
-            but the per-application overrides can override the global overrides.
+            flatpak creates a sandboxed environment for the application to run in
+            by mounting the right runtime at <filename>/usr</filename> and a writable
+            directory at <filename>/var</filename>, whose content is preserved between
+            application runs. The application itself is mounted at <filename>/app</filename>.
         </para>
         <para>
-            Unless overridden with the --user or --installation options, this command
-            changes the default system-wide installation.
+            The details of the sandboxed environment are controlled by the application
+            metadata and various options like --share and --socket that are passed to the run
+            command: Access is allowed if it was requested either in the application
+            metadata file or with an option and the user hasn't overridden it.
+        </para>
+        <para>
+            The remaining arguments are passed to the command that gets run in the sandboxed
+            environment. See the <option>--file-forwarding</option> for handling of file arguments.
         </para>
 
     </refsect1>
@@ -76,29 +84,72 @@
             </varlistentry>
 
             <varlistentry>
-                <term><option>--user</option></term>
+                <term><option>-v</option></term>
+                <term><option>--verbose</option></term>
 
                 <listitem><para>
-                    Update a per-user installation.
+                    Print debug information during command processing.
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--system</option></term>
+                <term><option>--version</option></term>
 
                 <listitem><para>
-                    Update the default system-wide installation.
+                    Print version information and exit.
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--installation=NAME</option></term>
+                <term><option>--arch=ARCH</option></term>
 
                 <listitem><para>
-                    Updates a system-wide installation specified by <arg choice="plain">NAME</arg>
-                    among those defined in <filename>/etc/flatpak/installations.d/</filename>.
-                    Using <arg choice="plain">--installation=default</arg> is equivalent to using
-                    <arg choice="plain">--system</arg>.
+                    The architecture to install for.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--command=COMMAND</option></term>
+
+                <listitem><para>
+                    The command to run instead of the one listed in the application metadata.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--branch=BRANCH</option></term>
+
+                <listitem><para>
+                    The branch to use.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-d</option></term>
+                <term><option>--devel</option></term>
+
+                <listitem><para>
+                    Use the devel runtime that is specified in the application metadata instead of the regular runtime, and use a seccomp profile that is less likely to break development tools.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--runtime=RUNTIME</option></term>
+
+                <listitem><para>
+                  Use this runtime instead of the one that is specified in the application metadata.
+                  This is a full tuple, like for example <arg choice="plain">org.freedesktop.Sdk/x86_64/1.2</arg>, but
+                  partial tuples are allowed. Any empty or missing parts are filled in with the corresponding
+                  values specified by the app.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--runtime-version=VERSION</option></term>
+
+                <listitem><para>
+                  Use this version of the runtime instead of the one that is specified in the application metadata.
+                  This overrides any version specified with the --runtime option.
                 </para></listitem>
             </varlistentry>
 
@@ -128,7 +179,7 @@
                 <term><option>--socket=SOCKET</option></term>
 
                 <listitem><para>
-                    Expose a well-known socket to the application. This overrides to
+                    Expose a well known socket to the application. This overrides to
                     the Context section from the application metadata.
                     SOCKET must be one of: x11, wayland, pulseaudio, system-bus, session-bus.
                     This option can be used multiple times.
@@ -139,7 +190,7 @@
                 <term><option>--nosocket=SOCKET</option></term>
 
                 <listitem><para>
-                    Don't expose a well-known socket to the application. This overrides to
+                    Don't expose a well known socket to the application. This overrides to
                     the Context section from the application metadata.
                     SOCKET must be one of: x11, wayland, pulseaudio, system-bus, session-bus.
                     This option can be used multiple times.
@@ -172,20 +223,10 @@
                 <term><option>--allow=FEATURE</option></term>
 
                 <listitem><para>
-                    Allow access to a specific feature. This updates
-                    the [Context] group in the metadata.
+                    Allow access to a specific feature. This overrides to
+                    the Context section from the application metadata.
                     FEATURE must be one of: devel, multiarch.
                     This option can be used multiple times.
-                 </para><para>
-                    The <code>devel</code> feature allows the application to
-                    access certain syscalls such as <code>ptrace()</code>, and
-                <code>perf_event_open()</code>.
-                </para><para>
-                    The <code>multiarch</code> feature allows the application to
-                    execute programs compiled for an ABI other than the one supported
-                    natively by the system. For example, for the <code>x86_64</code>
-                    architecture, 32-bit <code>x86</code> binaries will be allowed as
-                    well.
                 </para></listitem>
             </varlistentry>
 
@@ -193,8 +234,8 @@
                 <term><option>--disallow=FEATURE</option></term>
 
                 <listitem><para>
-                    Disallow access to a specific feature. This updates
-                    the [Context] group in the metadata.
+                    Disallow access to a specific feature. This overrides to
+                    the Context section from the application metadata.
                     FEATURE must be one of: devel, multiarch.
                     This option can be used multiple times.
                 </para></listitem>
@@ -206,9 +247,9 @@
                 <listitem><para>
                     Allow the application access to a subset of the filesystem.
                     This overrides to the Context section from the application metadata.
-                    FS can be one of: home, host, xdg-desktop, xdg-documents, xdg-download
-                    xdg-music, xdg-pictures, xdg-public-share, xdg-templates, xdg-videos, xdg-run,
-                    xdg-config, xdg-cache, xdg-data,
+                    FS can be one of: home, host, xdg-desktop, xdg-documents, xdg-download,
+                    xdg-music, xdg-pictures, xdg-public-share, xdg-templates, xdg-videos,
+                    xdg-run, xdg-config, xdg-cache, xdg-data,
                     an absolute path, or a homedir-relative path like ~/dir or paths
                     relative to the xdg dirs, like xdg-download/subdir.
                     The optional :ro suffix indicates that the location will be read-only.
@@ -228,13 +269,6 @@
                     xdg-music, xdg-pictures, xdg-public-share, xdg-templates, xdg-videos,
                     an absolute path, or a homedir-relative path like ~/dir.
                     This option can be used multiple times.
-                </para><para>
-                    In general, "--nofilesystem=PATH" will remove access to a specific path if exactly that path
-                    was previously granted. However, as a special case, "--nofilesystem=home" will remove access to all
-                    previously granted locations inside the homedir as well, such as "home/some-dir", or "xdg-download",
-                    and "--nofilesystem=host" will remove access to all previously granted locations.
-                    Note: absolute paths that happen to be inside the current users home directory are not considered for
-                    this special case.
                 </para></listitem>
             </varlistentry>
 
@@ -275,7 +309,8 @@ key=v1;v2;
                 <term><option>--own-name=NAME</option></term>
 
                 <listitem><para>
-                    Allow the application to own the well-known name NAME on the session bus.
+                    Allow the application to own the well known name NAME on the session bus.
+                    If NAME ends with .*, it allows the application to own all matching names.
                     This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
@@ -285,7 +320,8 @@ key=v1;v2;
                 <term><option>--talk-name=NAME</option></term>
 
                 <listitem><para>
-                    Allow the application to talk to the well-known name NAME on the session bus.
+                    Allow the application to talk to the well known name NAME on the session bus.
+                    If NAME ends with .*, it allows the application to talk to all matching names.
                     This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
@@ -326,21 +362,36 @@ key=v1;v2;
             </varlistentry>
 
             <varlistentry>
-                <term><option>-v</option></term>
-                <term><option>--verbose</option></term>
+                <term><option>--log-session-bus</option></term>
 
                 <listitem><para>
-                    Print debug information during command processing.
+                    Log session bus traffic. This can be useful to see what access you need to allow in
+                    your D-Bus policy.
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--version</option></term>
+                <term><option>--log-system-bus</option></term>
 
                 <listitem><para>
-                    Print version information and exit.
+                    Log system bus traffic. This can be useful to see what access you need to allow in
+                    your D-Bus policy.
                 </para></listitem>
             </varlistentry>
+
+            <varlistentry>
+                <term><option>--file-forwarding</option></term>
+
+                <listitem><para>
+                    If this option is specified, the remaining arguments are scanned, and all arguments
+                    that are enclosed between a pair of '@@' arguments are interpreted as file paths,
+                    exported in the document store, and passed to the command in the form of the
+                    resulting document path. Arguments between '@@u' and '@@' are considered uris,
+                    and any file: uris are exported. The exports are non-persistent and with read and write
+                    permissions for the application.
+                </para></listitem>
+            </varlistentry>
+
         </variablelist>
     </refsect1>
 
@@ -348,10 +399,13 @@ key=v1;v2;
         <title>Examples</title>
 
         <para>
-            <command>$ flatpak override --nosocket=wayland org.gnome.GEdit</command>
+            <command>$ flatpak run org.gnome.GEdit</command>
         </para>
         <para>
-            <command>$ flatpak override --filesystem=home org.mozilla.Firefox</command>
+            <command>$ flatpak run --devel --command=bash org.gnome.Builder</command>
+        </para>
+        <para>
+            <command>$ flatpak run --command=bash org.gnome.Sdk</command>
         </para>
 
     </refsect1>
@@ -361,7 +415,8 @@ key=v1;v2;
 
         <para>
             <citerefentry><refentrytitle>flatpak</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-            <citerefentry><refentrytitle>flatpak-run</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+            <citerefentry><refentrytitle>flatpak-override</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+            <citerefentry><refentrytitle>flatpak-enter</refentrytitle><manvolnum>1</manvolnum></citerefentry>
         </para>
 
     </refsect1>
