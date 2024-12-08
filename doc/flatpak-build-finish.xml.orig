@@ -2,10 +2,10 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
     "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 
-<refentry id="flatpak-run">
+<refentry id="flatpak-build-finish">
 
     <refentryinfo>
-        <title>flatpak run</title>
+        <title>flatpak build-finish</title>
         <productname>flatpak</productname>
 
         <authorgroup>
@@ -19,21 +19,20 @@
     </refentryinfo>
 
     <refmeta>
-        <refentrytitle>flatpak run</refentrytitle>
+        <refentrytitle>flatpak build-finish</refentrytitle>
         <manvolnum>1</manvolnum>
     </refmeta>
 
     <refnamediv>
-        <refname>flatpak-run</refname>
-        <refpurpose>Run an application or open a shell in a runtime</refpurpose>
+        <refname>flatpak-build-finish</refname>
+        <refpurpose>Finalize a build directory</refpurpose>
     </refnamediv>
 
     <refsynopsisdiv>
             <cmdsynopsis>
-                <command>flatpak run</command>
+                <command>flatpak build-finish</command>
                 <arg choice="opt" rep="repeat">OPTION</arg>
-                <arg choice="plain">REF</arg>
-                <arg choice="opt" rep="repeat">ARG</arg>
+                <arg choice="plain">DIRECTORY</arg>
             </cmdsynopsis>
     </refsynopsisdiv>
 
@@ -41,31 +40,25 @@
         <title>Description</title>
 
         <para>
-            If <arg choice="plain">REF</arg> names an installed application,
-            flatpak runs the application in a sandboxed environment. Extra
-            arguments are passed on to the application.
+            Finalizes a build directory, to prepare it for exporting.
+            <arg choice="plain">DIRECTORY</arg> is the name of the directory.
         </para>
         <para>
-            If <arg choice="plain">REF</arg> names a runtime, a shell is opened in the
-            runtime. This is useful for development and testing.
+            The result of this command is that desktop files, icons and
+            D-Bus service files from the <filename>files</filename> subdirectory
+            are copied to a new <filename>export</filename> subdirectory. In the
+            <filename>metadata</filename> file, the command key is set in the
+            [Application] group, and the supported keys in the [Environment]
+            group are set according to the options.
         </para>
         <para>
-            flatpak creates a sandboxed environment for the application to run in
-            by mounting the right runtime at <filename>/usr</filename> and a writable
-            directory at <filename>/var</filename>, whose content is preserved between
-            application runs. The application itself is mounted at <filename>/app</filename>.
+            You should review the exported files and the application metadata
+            before creating and distributing an application bundle.
         </para>
         <para>
-            The details of the sandboxed environment are controlled by the application
-            metadata and various options like --share and --socket that are passed to the run
-            command: Access is allowed if it was requested either in the application
-            metadata file or with an option and the user hasn't overridden it.
+            It is an error to run build-finish on a directory that has not
+            been initialized as a build directory, or has already been finalized.
         </para>
-        <para>
-            The remaining arguments are passed to the command that gets run in the sandboxed
-            environment. See the <option>--file-forwarding</option> for handling of file arguments.
-        </para>
-
     </refsect1>
 
     <refsect1>
@@ -84,72 +77,20 @@
             </varlistentry>
 
             <varlistentry>
-                <term><option>-v</option></term>
-                <term><option>--verbose</option></term>
-
-                <listitem><para>
-                    Print debug information during command processing.
-                </para></listitem>
-            </varlistentry>
-
-            <varlistentry>
-                <term><option>--ostree-verbose</option></term>
-
-                <listitem><para>
-                    Print OSTree debug information during command processing.
-                </para></listitem>
-            </varlistentry>
-
-            <varlistentry>
-                <term><option>--arch=ARCH</option></term>
-
-                <listitem><para>
-                    The architecture to install for.
-                </para></listitem>
-            </varlistentry>
-
-            <varlistentry>
                 <term><option>--command=COMMAND</option></term>
 
                 <listitem><para>
-                    The command to run instead of the one listed in the application metadata.
+                    The command to use. If this option is not specified,
+                    the first executable found in <filename>files/bin</filename>
+                    is used.
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--branch=BRANCH</option></term>
+                <term><option>--require-version=MAJOR.MINOR.MICRO</option></term>
 
                 <listitem><para>
-                    The branch to use.
-                </para></listitem>
-            </varlistentry>
-
-            <varlistentry>
-                <term><option>-d</option></term>
-                <term><option>--devel</option></term>
-
-                <listitem><para>
-                    Use the devel runtime that is specified in the application metadata instead of the regular runtime, and use a seccomp profile that is less likely to break development tools.
-                </para></listitem>
-            </varlistentry>
-
-            <varlistentry>
-                <term><option>--runtime=RUNTIME</option></term>
-
-                <listitem><para>
-                  Use this runtime instead of the one that is specified in the application metadata.
-                  This is a full tuple, like for example <arg choice="plain">org.freedesktop.Sdk/x86_64/1.2</arg>, but
-                  partial tuples are allowed. Any empty or missing parts are filled in with the corresponding
-                  values specified by the app.
-                </para></listitem>
-            </varlistentry>
-
-            <varlistentry>
-                <term><option>--runtime-version=VERSION</option></term>
-
-                <listitem><para>
-                  Use this version of the runtime instead of the one that is specified in the application metadata.
-                  This overrides any version specified with the --runtime option.
+                    Require this version of later of flatpak to install/update to this build.
                 </para></listitem>
             </varlistentry>
 
@@ -157,8 +98,8 @@
                 <term><option>--share=SUBSYSTEM</option></term>
 
                 <listitem><para>
-                    Share a subsystem with the host session. This overrides
-                    the Context section from the application metadata.
+                    Share a subsystem with the host session. This updates
+                    the [Context] group in the metadata.
                     SUBSYSTEM must be one of: network, ipc.
                     This option can be used multiple times.
                 </para></listitem>
@@ -168,8 +109,8 @@
                 <term><option>--unshare=SUBSYSTEM</option></term>
 
                 <listitem><para>
-                    Don't share a subsystem with the host session. This overrides
-                    the Context section from the application metadata.
+                    Don't share a subsystem with the host session. This updates
+                    the [Context] group in the metadata.
                     SUBSYSTEM must be one of: network, ipc.
                     This option can be used multiple times.
                 </para></listitem>
@@ -179,8 +120,8 @@
                 <term><option>--socket=SOCKET</option></term>
 
                 <listitem><para>
-                    Expose a well known socket to the application. This overrides to
-                    the Context section from the application metadata.
+                    Expose a well known socket to the application. This updates
+                    the [Context] group in the metadata.
                     SOCKET must be one of: x11, wayland, fallback-x11, pulseaudio, system-bus, session-bus, ssh-auth.
                     This option can be used multiple times.
                 </para></listitem>
@@ -190,8 +131,8 @@
                 <term><option>--nosocket=SOCKET</option></term>
 
                 <listitem><para>
-                    Don't expose a well known socket to the application. This overrides to
-                    the Context section from the application metadata.
+                    Don't expose a well known socket to the application. This updates
+                    the [Context] group in the metadata.
                     SOCKET must be one of: x11, wayland, fallback-x11, pulseaudio, system-bus, session-bus, ssh-auth.
                     This option can be used multiple times.
                 </para></listitem>
@@ -201,8 +142,8 @@
                 <term><option>--device=DEVICE</option></term>
 
                 <listitem><para>
-                    Expose a device to the application. This overrides to
-                    the Context section from the application metadata.
+                    Expose a device to the application. This updates
+                    the [Context] group in the metadata.
                     DEVICE must be one of: dri, kvm, all.
                     This option can be used multiple times.
                 </para></listitem>
@@ -212,8 +153,8 @@
                 <term><option>--nodevice=DEVICE</option></term>
 
                 <listitem><para>
-                    Don't expose a device to the application. This overrides to
-                    the Context section from the application metadata.
+                    Don't expose a device to the application. This updates
+                    the [Context] group in the metadata.
                     DEVICE must be one of: dri, kvm, all.
                     This option can be used multiple times.
                 </para></listitem>
@@ -223,13 +164,24 @@
                 <term><option>--allow=FEATURE</option></term>
 
                 <listitem><para>
-                    Allow access to a specific feature. This overrides to
-                    the Context section from the application metadata.
+                    Allow access to a specific feature. This updates
+                    the [Context] group in the metadata.
                     FEATURE must be one of: devel, multiarch, bluetooth.
                     This option can be used multiple times.
-                    </para><para>
-                    See <citerefentry><refentrytitle>flatpak-build-finish</refentrytitle><manvolnum>1</manvolnum></citerefentry>
-                    for the meaning of the various features.
+                 </para><para>
+                    The <code>devel</code> feature allows the application to
+                    access certain syscalls such as <code>ptrace()</code>, and
+                <code>perf_event_open()</code>.
+                </para><para>
+                    The <code>multiarch</code> feature allows the application to
+                    execute programs compiled for an ABI other than the one supported
+                    natively by the system. For example, for the <code>x86_64</code>
+                    architecture, 32-bit <code>x86</code> binaries will be allowed as
+                    well.
+                </para><para>
+                    The <code>bluetooth</code> feature allows the application to
+                    use bluetooth (AF_BLUETOOTH) sockets. Note, for bluetooth to
+                    fully work you must also have network access.
                 </para></listitem>
             </varlistentry>
 
@@ -237,8 +189,8 @@
                 <term><option>--disallow=FEATURE</option></term>
 
                 <listitem><para>
-                    Disallow access to a specific feature. This overrides to
-                    the Context section from the application metadata.
+                    Disallow access to a specific feature. This updates
+                    the [Context] group in the metadata.
                     FEATURE must be one of: devel, multiarch, bluetooth.
                     This option can be used multiple times.
                 </para></listitem>
@@ -249,12 +201,11 @@
 
                 <listitem><para>
                     Allow the application access to a subset of the filesystem.
-                    This overrides to the Context section from the application metadata.
-                    FS can be one of: home, host, xdg-desktop, xdg-documents, xdg-download,
-                    xdg-music, xdg-pictures, xdg-public-share, xdg-templates, xdg-videos,
-                    xdg-run, xdg-config, xdg-cache, xdg-data,
-                    an absolute path, or a homedir-relative path like ~/dir or paths
-                    relative to the xdg dirs, like xdg-download/subdir.
+                    This updates the [Context] group in the metadata.
+                    FS can be one of: home, host, xdg-desktop, xdg-documents, xdg-download
+                    xdg-music, xdg-pictures, xdg-public-share, xdg-templates, xdg-videos, xdg-run,
+                    xdg-config, xdg-cache, xdg-data, an absolute path, or a homedir-relative
+                    path like ~/dir or paths relative to the xdg dirs, like xdg-download/subdir.
                     The optional :ro suffix indicates that the location will be read-only.
                     The optional :create suffix indicates that the location will be read-write and created if it doesn't exist.
                     This option can be used multiple times.
@@ -272,15 +223,7 @@
                     xdg-music, xdg-pictures, xdg-public-share, xdg-templates, xdg-videos,
                     an absolute path, or a homedir-relative path like ~/dir.
                     This option can be used multiple times.
-                </para><para>
-                    In general, "--nofilesystem=PATH" will remove access to a specific path if exactly that path
-                    was previously granted. However, as a special case, "--nofilesystem=home" will remove access to all
-                    previously granted locations inside the homedir as well, such as "home/some-dir", or "xdg-download",
-                    and "--nofilesystem=host" will remove access to all previously granted locations.
-                    Note: absolute paths that happen to be inside the current users home directory are not considered for
-                    this special case.
                 </para></listitem>
-
             </varlistentry>
 
             <varlistentry>
@@ -311,6 +254,7 @@ key=v1;v2;
 
                 <listitem><para>
                     Set an environment variable in the application.
+                    This updates the [Environment] group in the metadata.
                     This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
@@ -322,7 +266,8 @@ key=v1;v2;
                 <listitem><para>
                     Allow the application to own the well known name NAME on the session bus.
                     If NAME ends with .*, it allows the application to own all matching names.
-                    This overrides to the Context section from the application metadata.
+
+                    This updates the [Session Bus Policy] group in the metadata.
                     This option can be used multiple times.
                 </para></listitem>
             </varlistentry>
@@ -333,7 +278,7 @@ key=v1;v2;
                 <listitem><para>
                     Allow the application to talk to the well known name NAME on the session bus.
                     If NAME ends with .*, it allows the application to talk to all matching names.
-                    This overrides to the Context section from the application metadata.
+                    This updates the [Session Bus Policy] group in the metadata.
                     This option can be used multiple times.
                 </para></listitem>
             </varlistentry>
@@ -344,7 +289,7 @@ key=v1;v2;
                 <listitem><para>
                     Allow the application to own the well known name NAME on the system bus.
                     If NAME ends with .*, it allows the application to own all matching names.
-                    This overrides to the Context section from the application metadata.
+                    This updates the [System Bus Policy] group in the metadata.
                     This option can be used multiple times.
                 </para></listitem>
             </varlistentry>
@@ -355,7 +300,7 @@ key=v1;v2;
                 <listitem><para>
                     Allow the application to talk to the well known name NAME on the system bus.
                     If NAME ends with .*, it allows the application to talk to all matching names.
-                    This overrides to the Context section from the application metadata.
+                    This updates the [System Bus Policy] group in the metadata.
                     This option can be used multiple times.
                 </para></listitem>
             </varlistentry>
@@ -367,39 +312,89 @@ key=v1;v2;
                     If the application doesn't have access to the real homedir, make the (homedir-relative) path
                     FILENAME a bind mount to the corresponding path in the per-application directory,
                     allowing that location to be used for persistent data.
-                    This overrides to the Context section from the application metadata.
+                    This updates the [Context] group in the metadata.
                     This option can be used multiple times.
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--log-session-bus</option></term>
+                <term><option>--runtime=RUNTIME</option></term>
+                <term><option>--sdk=SDK</option></term>
 
                 <listitem><para>
-                    Log session bus traffic. This can be useful to see what access you need to allow in
-                    your D-Bus policy.
+                  Change the runtime or sdk used by the app to the specified partial ref. Unspecified parts
+                  of the ref are taken from the old values or defaults.
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--log-system-bus</option></term>
+                <term><option>--metadata=GROUP=KEY[=VALUE]</option></term>
 
                 <listitem><para>
-                    Log system bus traffic. This can be useful to see what access you need to allow in
-                    your D-Bus policy.
+                  Set a generic key in the metadata file. If value is left out it will
+                  be set to "true".
                 </para></listitem>
             </varlistentry>
 
             <varlistentry>
-                <term><option>--file-forwarding</option></term>
+                <term><option>--extension=NAME=VARIABLE[=VALUE]</option></term>
 
                 <listitem><para>
-                    If this option is specified, the remaining arguments are scanned, and all arguments
-                    that are enclosed between a pair of '@@' arguments are interpreted as file paths,
-                    exported in the document store, and passed to the command in the form of the
-                    resulting document path. Arguments between '@@u' and '@@' are considered uris,
-                    and any file: uris are exported. The exports are non-persistent and with read and write
-                    permissions for the application.
+                  Add extension point info.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--remove-extension=NAME</option></term>
+
+                <listitem><para>
+                  Remove extension point info.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--extension-priority=VALUE</option></term>
+
+                <listitem><para>
+                  Set the priority (library override order) of the extension point.
+                  Only useful for extensions. 0 is the default, and higher value means higher
+                  priority.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--extra-data=NAME:SHA256:DOWNLOAD-SIZE:INSTALL-SIZE:URL</option></term>
+
+                <listitem><para>
+                    Adds information about extra data uris to the app. These will be downloaded
+                    and verified by the client when the app is installed and placed in the
+                    /app/extra directory. You can also supply an /app/bin/apply_extra script
+                    that will be run after the files are downloaded.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--no-exports</option></term>
+
+                <listitem><para>
+                    Don't look for exports in the build.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>-v</option></term>
+                <term><option>--verbose</option></term>
+
+                <listitem><para>
+                    Print debug information during command processing.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--ostree-verbose</option></term>
+
+                <listitem><para>
+                    Print OSTree debug information during command processing.
                 </para></listitem>
             </varlistentry>
         </variablelist>
@@ -409,14 +404,15 @@ key=v1;v2;
         <title>Examples</title>
 
         <para>
-            <command>$ flatpak run org.gnome.GEdit</command>
+            <command>$ flatpak build-finish /build/my-app --socket=x11 --share=ipc</command>
         </para>
-        <para>
-            <command>$ flatpak run --devel --command=bash org.gnome.Builder</command>
-        </para>
-        <para>
-            <command>$ flatpak run --command=bash org.gnome.Sdk</command>
-        </para>
+<programlisting>
+Exporting share/applications/gnome-calculator.desktop
+Exporting share/dbus-1/services/org.gnome.Calculator.SearchProvider.service
+More than one executable
+Using gcalccmd as command
+Please review the exported files and the metadata
+</programlisting>
 
     </refsect1>
 
@@ -425,8 +421,9 @@ key=v1;v2;
 
         <para>
             <citerefentry><refentrytitle>flatpak</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-            <citerefentry><refentrytitle>flatpak-override</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-            <citerefentry><refentrytitle>flatpak-enter</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+            <citerefentry><refentrytitle>flatpak-build-init</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+            <citerefentry><refentrytitle>flatpak-build</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
+            <citerefentry><refentrytitle>flatpak-build-export</refentrytitle><manvolnum>1</manvolnum></citerefentry>
         </para>
 
     </refsect1>
