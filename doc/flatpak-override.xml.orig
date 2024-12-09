@@ -2,10 +2,10 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
     "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 
-<refentry id="flatpak-build-finish">
+<refentry id="flatpak-override">
 
     <refentryinfo>
-        <title>flatpak build-finish</title>
+        <title>flatpak override</title>
         <productname>flatpak</productname>
 
         <authorgroup>
@@ -19,20 +19,20 @@
     </refentryinfo>
 
     <refmeta>
-        <refentrytitle>flatpak build-finish</refentrytitle>
+        <refentrytitle>flatpak override</refentrytitle>
         <manvolnum>1</manvolnum>
     </refmeta>
 
     <refnamediv>
-        <refname>flatpak-build-finish</refname>
-        <refpurpose>Finalize a build directory</refpurpose>
+        <refname>flatpak-override</refname>
+        <refpurpose>Override application requirements</refpurpose>
     </refnamediv>
 
     <refsynopsisdiv>
             <cmdsynopsis>
-                <command>flatpak build-finish</command>
+                <command>flatpak override</command>
                 <arg choice="opt" rep="repeat">OPTION</arg>
-                <arg choice="plain">DIRECTORY</arg>
+                <arg choice="plain">APP</arg>
             </cmdsynopsis>
     </refsynopsisdiv>
 
@@ -40,25 +40,16 @@
         <title>Description</title>
 
         <para>
-            Finalizes a build directory, to prepare it for exporting.
-            <arg choice="plain">DIRECTORY</arg> is the name of the directory.
+            Overrides the application specified runtime requirements. This can be used
+            to grant a sandboxed application more or less resources than it requested.
         </para>
         <para>
-            The result of this command is that desktop files, icons and
-            D-Bus service files from the <filename>files</filename> subdirectory
-            are copied to a new <filename>export</filename> subdirectory. In the
-            <filename>metadata</filename> file, the command key is set in the
-            [Application] group, and the supported keys in the [Environment]
-            group are set according to the options.
+          By default the application gets access to the resources it
+          requested when it is started. But the user can override it
+          on a particular instance by specifying extra arguments to
+          flatpak run, or every time by using flatpak override.
         </para>
-        <para>
-            You should review the exported files and the application metadata
-            before creating and distributing an application bundle.
-        </para>
-        <para>
-            It is an error to run build-finish on a directory that has not
-            been initialized as a build directory, or has already been finalized.
-        </para>
+
     </refsect1>
 
     <refsect1>
@@ -77,21 +68,11 @@
             </varlistentry>
 
             <varlistentry>
-                <term><option>--command=COMMAND</option></term>
-
-                <listitem><para>
-                    The command to use. If this option is not specified,
-                    the first executable found in <filename>files/bin</filename>
-                    is used.
-                </para></listitem>
-            </varlistentry>
-
-            <varlistentry>
                 <term><option>--share=SUBSYSTEM</option></term>
 
                 <listitem><para>
-                    Share a subsystem with the host session. This updates
-                    the [Context] group in the metadata.
+                    Share a subsystem with the host session. This overrides
+                    the Context section from the application metadata.
                     SUBSYSTEM must be one of: network, ipc.
                     This option can be used multiple times.
                 </para></listitem>
@@ -101,8 +82,8 @@
                 <term><option>--unshare=SUBSYSTEM</option></term>
 
                 <listitem><para>
-                    Don't share a subsystem with the host session. This updates
-                    the [Context] group in the metadata.
+                    Don't share a subsystem with the host session. This overrides
+                    the Context section from the application metadata.
                     SUBSYSTEM must be one of: network, ipc.
                     This option can be used multiple times.
                 </para></listitem>
@@ -112,8 +93,8 @@
                 <term><option>--socket=SOCKET</option></term>
 
                 <listitem><para>
-                    Expose a well known socket to the application. This updates
-                    the [Context] group in the metadata.
+                    Expose a well-known socket to the application. This overrides to
+                    the Context section from the application metadata.
                     SOCKET must be one of: x11, wayland, pulseaudio, system-bus, session-bus.
                     This option can be used multiple times.
                 </para></listitem>
@@ -123,8 +104,8 @@
                 <term><option>--nosocket=SOCKET</option></term>
 
                 <listitem><para>
-                    Don't expose a well known socket to the application. This updates
-                    the [Context] group in the metadata.
+                    Don't expose a well-known socket to the application. This overrides to
+                    the Context section from the application metadata.
                     SOCKET must be one of: x11, wayland, pulseaudio, system-bus, session-bus.
                     This option can be used multiple times.
                 </para></listitem>
@@ -134,8 +115,8 @@
                 <term><option>--device=DEVICE</option></term>
 
                 <listitem><para>
-                    Expose a device to the application. This updates
-                    the [Context] group in the metadata.
+                    Expose a device to the application. This overrides to
+                    the Context section from the application metadata.
                     DEVICE must be one of: dri.
                     This option can be used multiple times.
                 </para></listitem>
@@ -145,8 +126,8 @@
                 <term><option>--nodevice=DEVICE</option></term>
 
                 <listitem><para>
-                    Don't expose a device to the application. This updates
-                    the [Context] group in the metadata.
+                    Don't expose a device to the application. This overrides to
+                    the Context section from the application metadata.
                     DEVICE must be one of: dri.
                     This option can be used multiple times.
                 </para></listitem>
@@ -157,7 +138,7 @@
 
                 <listitem><para>
                     Allow the application access to a subset of the filesystem.
-                    This updates the [Context] group in the metadata.
+                    This overrides to the Context section from the application metadata.
                     FS can be one of: home, host, xdg-desktop, xdg-documents, xdg-download
                     xdg-music, xdg-pictures, xdg-public-share, xdg-templates, xdg-videos, xdg-run,
                     an absolute path, or a homedir-relative path like ~/dir or paths
@@ -171,7 +152,6 @@
 
                 <listitem><para>
                     Set an environment variable in the application.
-                    This updates the [Environment] group in the metadata.
                     This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
@@ -181,10 +161,8 @@
                 <term><option>--own-name=NAME</option></term>
 
                 <listitem><para>
-                    Allow the application to own the well known name NAME on the session bus.
-                    If NAME ends with .*, it allows the application to own all matching names.
-
-                    This updates the [Session Bus Policy] group in the metadata.
+                    Allow the application to own the well-known name NAME on the session bus.
+                    This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
             </varlistentry>
@@ -193,9 +171,8 @@
                 <term><option>--talk-name=NAME</option></term>
 
                 <listitem><para>
-                    Allow the application to talk to the well known name NAME on the session bus.
-                    If NAME ends with .*, it allows the application to talk to all matching names.
-                    This updates the [Session Bus Policy] group in the metadata.
+                    Allow the application to talk to the well-known name NAME on the session bus.
+                    This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
             </varlistentry>
@@ -206,7 +183,7 @@
                 <listitem><para>
                     Allow the application to own the well known name NAME on the system bus.
                     If NAME ends with .*, it allows the application to own all matching names.
-                    This updates the [System Bus Policy] group in the metadata.
+                    This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
             </varlistentry>
@@ -217,11 +194,11 @@
                 <listitem><para>
                     Allow the application to talk to the well known name NAME on the system bus.
                     If NAME ends with .*, it allows the application to talk to all matching names.
-                    This updates the [System Bus Policy] group in the metadata.
+                    This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
                 </para></listitem>
             </varlistentry>
-
+`
             <varlistentry>
                 <term><option>--persist=FILENAME</option></term>
 
@@ -229,23 +206,8 @@
                     If the application doesn't have access to the real homedir, make the (homedir-relative) path
                     FILENAME a bind mount to the corresponding path in the per-application directory,
                     allowing that location to be used for persistent data.
-                    This updates the [Context] group in the metadata.
+                    This overrides to the Context section from the application metadata.
                     This option can be used multiple times.
-                </para><para>
-                    In general, "--nofilesystem=PATH" will remove access to a specific path if exactly that path
-                    was previously granted. However, as a special case, "--nofilesystem=home"  will remove access to all
-                    previously granted locations inside the homedir as well, such as "home/some-dir", or "xdg-download",
-                    and "--nofilesystem=host" will remove access to all previously granted locations.
-                    Note: absolute paths that happen to be inside the current users home directory are not considered for
-                    this special case.
-                </para></listitem>
-            </varlistentry>
-
-            <varlistentry>
-                <term><option>--no-exports</option></term>
-
-                <listitem><para>
-                    Don't look for exports in the build.
                 </para></listitem>
             </varlistentry>
 
@@ -272,15 +234,11 @@
         <title>Examples</title>
 
         <para>
-            <command>$ flatpak build-finish /build/my-app --socket=x11 --share=ipc</command>
+            <command>$ flatpak override --nosocket=wayland org.gnome.GEdit</command>
         </para>
-<programlisting>
-Exporting share/applications/gnome-calculator.desktop
-Exporting share/dbus-1/services/org.gnome.Calculator.SearchProvider.service
-More than one executable
-Using gcalccmd as command
-Please review the exported files and the metadata
-</programlisting>
+        <para>
+            <command>$ flatpak override --filesystem=home org.mozilla.Firefox</command>
+        </para>
 
     </refsect1>
 
@@ -289,9 +247,7 @@ Please review the exported files and the metadata
 
         <para>
             <citerefentry><refentrytitle>flatpak</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-            <citerefentry><refentrytitle>flatpak-build-init</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-            <citerefentry><refentrytitle>flatpak-build</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
-            <citerefentry><refentrytitle>flatpak-build-export</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+            <citerefentry><refentrytitle>flatpak-run</refentrytitle><manvolnum>1</manvolnum></citerefentry>
         </para>
 
     </refsect1>
